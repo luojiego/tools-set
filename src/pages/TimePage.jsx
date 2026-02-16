@@ -7,19 +7,22 @@ import { Label } from '@/components/ui/label.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion.jsx'
 import ToolPage from '@/components/ToolPage'
 import { 
   Clock, 
   Plus, 
   Trash2, 
   HelpCircle,
-  ArrowUpDown,
+  ArrowRight,
   Terminal,
   Code,
   Copy,
-  Check
+  Check,
+  ArrowDown,
+  ArrowUp
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parse } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 
 const TIMEZONES = [
@@ -67,11 +70,6 @@ const formatTimeDiff = (ts1, ts2) => {
   return parts.join('')
 }
 
-const getTimezoneOffset = (tz) => {
-  const found = TIMEZONES.find(t => t.value === tz)
-  return found ? found.offset : 0
-}
-
 const HelpContent = () => {
   const [copied, setCopied] = useState('')
 
@@ -82,85 +80,313 @@ const HelpContent = () => {
   }
 
   const cliCommands = [
-    { os: 'Linux/macOS', cmd: 'date -d @1699900800', desc: '时间戳转日期' },
-    { os: 'Linux/macOS', cmd: 'date +%s', desc: '当前时间戳' },
-    { os: 'Linux/macOS', cmd: 'date -d "2023-11-13 10:00:00" +%s', desc: '日期转时间戳' },
-    { os: 'Windows PowerShell', cmd: '[datetime]::FromUnixTimestamp(1699900800)', desc: '时间戳转日期' },
-    { os: 'Windows PowerShell', cmd: '(Get-Date).ToUnixTimeSeconds()', desc: '当前时间戳' },
-    { os: 'Windows CMD', cmd: 'powershell -Command "[datetime]::FromUnixTimestamp(1699900800)"', desc: '时间戳转日期' },
+    { os: 'Linux/macOS', tsToDate: 'date -d @1699900800', dateToTs: 'date -d "2023-11-13 10:00:00" +%s' },
+    { os: 'Linux/macOS', tsToDate: 'date -r 1699900800', dateToTs: 'date -j -f "%Y-%m-%d %H:%M:%S" "2023-11-13 10:00:00" +%s' },
+    { os: 'Windows PowerShell', tsToDate: '[datetime]::FromUnixTimestamp(1699900800)', dateToTs: '(Get-Date "2023-11-13 10:00:00").ToUnixTimeSeconds()' },
+    { os: 'Windows CMD', tsToDate: 'powershell -Command "[datetime]::FromUnixTimestamp(1699900800)"', dateToTs: 'powershell -Command "(Get-Date \\"2023-11-13 10:00:00\\").ToUnixTimeSeconds()"' },
+    { os: 'macOS Terminal', tsToDate: 'date -r 1699900800', dateToTs: 'date -j -f "%Y-%m-%d %H:%M:%S" "2023-11-13 10:00:00" +%s' },
   ]
 
   const langExamples = [
-    { lang: 'JavaScript', code: "new Date(1699900800 * 1000).toISOString()" },
-    { lang: 'Python', code: "datetime.fromtimestamp(1699900800)" },
-    { lang: 'Java', code: "new Date(1699900800L * 1000)" },
-    { lang: 'Go', code: "time.Unix(1699900800, 0)" },
-    { lang: 'C#', code: "DateTimeOffset.FromUnixTimeSeconds(1699900800)" },
-    { lang: 'Ruby', code: "Time.at(1699900800)" },
-    { lang: 'PHP', code: "date('Y-m-d H:i:s', 1699900800)" },
-    { lang: 'Swift', code: "Date(timeIntervalSince1970: 1699900800)" },
-    { lang: 'Rust', code: "DateTime::from_timestamp(1699900800, 0)" },
-    { lang: 'TypeScript', code: "new Date(1699900800 * 1000)" },
+    { lang: 'JavaScript', tsToDate: "new Date(1699900800 * 1000)", dateToTs: "Math.floor(new Date('2023-11-13').getTime() / 1000)" },
+    { lang: 'TypeScript', tsToDate: "new Date(1699900800 * 1000)", dateToTs: "Math.floor(new Date('2023-11-13').getTime() / 1000)" },
+    { lang: 'Python', tsToDate: "datetime.fromtimestamp(1699900800)", dateToTs: "int(datetime(2023,11,13,10,0,0).timestamp())" },
+    { lang: 'Java', tsToDate: "new Date(1699900800L * 1000)", dateToTs: "(int)(Instant.parse(\"2023-11-13T10:00:00Z\").getEpochSecond())" },
+    { lang: 'Go', tsToDate: 'time.Unix(1699900800, 0)', dateToTs: 'time.Date(2023, 11, 13, 10, 0, 0, 0, time.UTC).Unix()' },
+    { lang: 'C#', tsToDate: 'DateTimeOffset.FromUnixTimeSeconds(1699900800)', dateToTs: '(int)(DateTime.Parse("2023-11-13 10:00:00").Subtract(new DateTime(1970,1,1)).TotalSeconds)' },
+    { lang: 'Ruby', tsToDate: 'Time.at(1699900800)', dateToTs: 'Time.parse("2023-11-13 10:00:00").to_i' },
+    { lang: 'PHP', tsToDate: "date('Y-m-d H:i:s', 1699900800)", dateToTs: 'strtotime("2023-11-13 10:00:00")' },
+    { lang: 'Swift', tsToDate: 'Date(timeIntervalSince1970: 1699900800)', dateToTs: 'Int(Date().timeIntervalSince1970)' },
+    { lang: 'Rust', tsToDate: 'DateTime::from_timestamp(1699900800, 0)', dateToTs: 'SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()' },
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="font-semibold mb-3 flex items-center">
-          <Terminal className="h-4 w-4 mr-2" />
-          命令行时间转换
-        </h3>
-        <div className="space-y-2">
-          {cliCommands.map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
+      <Accordion type="single" collapsible defaultValue="cli">
+        <AccordionItem value="cli">
+          <AccordionTrigger className="text-base font-semibold">
+            <div className="flex items-center">
+              <Terminal className="h-5 w-5 mr-2 text-blue-500" />
+              命令行时间转换
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4 mt-4">
               <div>
-                <span className="text-xs font-medium text-muted-foreground">{item.os}</span>
-                <code className="block text-sm">{item.cmd}</code>
-                <span className="text-xs text-muted-foreground">{item.desc}</span>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                  <ArrowUp className="h-4 w-4 mr-1" />
+                  时间戳 → 日期
+                </h4>
+                <div className="grid gap-2">
+                  {cliCommands.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                      <div>
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{item.os}</span>
+                        <code className="block text-sm mt-1">{item.tsToDate}</code>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => copyToClipboard(item.tsToDate, `tsToDate-${i}`)}
+                      >
+                        {copied === `tsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => copyToClipboard(item.cmd, `cli-${i}`)}
-              >
-                {copied === `cli-${i}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                  <ArrowDown className="h-4 w-4 mr-1" />
+                  日期 → 时间戳
+                </h4>
+                <div className="grid gap-2">
+                  {cliCommands.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                      <div>
+                        <span className="text-xs font-medium text-green-600 dark:text-green-400">{item.os}</span>
+                        <code className="block text-sm mt-1">{item.dateToTs}</code>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => copyToClipboard(item.dateToTs, `dateToTs-${i}`)}
+                      >
+                        {copied === `dateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      <div>
-        <h3 className="font-semibold mb-3 flex items-center">
-          <Code className="h-4 w-4 mr-2" />
-          编程语言时间转换
-        </h3>
-        <div className="space-y-2">
-          {langExamples.map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded bg-muted">
-              <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
-              <code className="flex-1 text-sm ml-2">{item.code}</code>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => copyToClipboard(item.code, `lang-${i}`)}
-              >
-                {copied === `lang-${i}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+        <AccordionItem value="code">
+          <AccordionTrigger className="text-base font-semibold">
+            <div className="flex items-center">
+              <Code className="h-5 w-5 mr-2 text-purple-500" />
+              编程语言时间转换
             </div>
-          ))}
-        </div>
-      </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4 mt-4">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                  <ArrowUp className="h-4 w-4 mr-1" />
+                  时间戳 → 日期
+                </h4>
+                <div className="grid gap-2">
+                  {langExamples.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                      <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
+                      <code className="flex-1 text-sm ml-2 truncate">{item.tsToDate}</code>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => copyToClipboard(item.tsToDate, `langTsToDate-${i}`)}
+                      >
+                        {copied === `langTsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                  <ArrowDown className="h-4 w-4 mr-1" />
+                  日期 → 时间戳
+                </h4>
+                <div className="grid gap-2">
+                  {langExamples.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                      <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
+                      <code className="flex-1 text-sm ml-2 truncate">{item.dateToTs}</code>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => copyToClipboard(item.dateToTs, `langDateToTs-${i}`)}
+                      >
+                        {copied === `langDateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   )
 }
+
+const TimestampItem = ({ ts, index, onRemove, onChange, onTimezoneChange, isLast, prevValue }) => {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-4">
+        <div className="flex-1">
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            时间戳 (秒)
+          </Label>
+          <Input
+            placeholder="输入时间戳..."
+            value={ts.value}
+            onChange={(e) => onChange(ts.id, e.target.value)}
+            className="font-mono"
+          />
+        </div>
+        <div className="w-[200px]">
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            时区
+          </Label>
+          <Select value={ts.timezone} onValueChange={(v) => onTimezoneChange(ts.id, v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONES.map(tz => (
+                <SelectItem key={tz.value} value={tz.value}>
+                  {tz.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => onRemove(ts.id)}
+          disabled={isLast && index === 0}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      {ts.value && (
+        <div className="mt-2 p-3 rounded-lg bg-muted/50 border-l-4 border-blue-500">
+          <span className="text-sm text-muted-foreground">转换结果: </span>
+          <span className="font-mono font-medium">
+            {formatTimestamp(parseInt(ts.value) || 0, ts.timezone)}
+          </span>
+          <Badge variant="outline" className="ml-2">
+            {ts.timezone}
+          </Badge>
+        </div>
+      )}
+      {index > 0 && ts.value && prevValue && (
+        <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-400">
+          <span className="text-sm text-muted-foreground">与上一个时间差: </span>
+          <span className="font-mono font-medium text-blue-600 dark:text-blue-400">
+            {formatTimeDiff(parseInt(ts.value) || 0, parseInt(prevValue) || 0)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const DateItem = ({ item, index, onRemove, onChange, onTimezoneChange, isLast, prevValue }) => {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-4">
+        <div className="flex-1">
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            日期时间
+          </Label>
+          <Input
+            type="datetime-local"
+            value={item.value}
+            onChange={(e) => onChange(item.id, e.target.value)}
+            className="font-mono"
+          />
+        </div>
+        <div className="w-[200px]">
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            时区
+          </Label>
+          <Select value={item.timezone} onValueChange={(v) => onTimezoneChange(item.id, v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONES.map(tz => (
+                <SelectItem key={tz.value} value={tz.value}>
+                  {tz.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => onRemove(item.id)}
+          disabled={isLast && index === 0}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      {item.value && (
+        <div className="mt-2 p-3 rounded-lg bg-muted/50 border-l-4 border-green-500">
+          <span className="text-sm text-muted-foreground">时间戳: </span>
+          <span className="font-mono font-medium">
+            {(() => {
+              try {
+                const date = new Date(item.value)
+                return Math.floor(date.getTime() / 1000)
+              } catch (e) {
+                return '无效日期'
+              }
+            })()}
+          </span>
+          <Badge variant="outline" className="ml-2">
+            秒级
+          </Badge>
+          <Badge variant="secondary" className="ml-2">
+            毫秒级: {(() => {
+              try {
+                const date = new Date(item.value)
+                return date.getTime()
+              } catch (e) {
+                return '无效日期'
+              }
+            })()}
+          </Badge>
+        </div>
+      )}
+      {index > 0 && item.value && prevValue && (
+        <div className="mt-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border-l-4 border-green-400">
+          <span className="text-sm text-muted-foreground">与上一个时间差: </span>
+          <span className="font-mono font-medium text-green-600 dark:text-green-400">
+            {(() => {
+              try {
+                const d1 = new Date(item.value).getTime() / 1000
+                const d2 = new Date(prevValue).getTime() / 1000
+                return formatTimeDiff(d1, d2)
+              } catch (e) {
+                return '-'
+              }
+            })()}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+let timestamps = []
+let items = []
 
 const TimePage = () => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [timestamps, setTimestamps] = useState([
     { id: 1, value: '', timezone: getLocalTimezone() }
   ])
+  const [dateItems, setDateItems] = useState([
+    { id: 1, value: '', timezone: getLocalTimezone() }
+  ])
   const [helpOpen, setHelpOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('ts-to-date')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -192,6 +418,29 @@ const TimePage = () => {
     ))
   }
 
+  const handleAddDate = () => {
+    const newId = Math.max(...dateItems.map(t => t.id), 0) + 1
+    setDateItems([...dateItems, { id: newId, value: '', timezone: getLocalTimezone() }])
+  }
+
+  const handleRemoveDate = (id) => {
+    if (dateItems.length > 1) {
+      setDateItems(dateItems.filter(t => t.id !== id))
+    }
+  }
+
+  const handleDateChange = (id, value) => {
+    setDateItems(dateItems.map(t => 
+      t.id === id ? { ...t, value } : t
+    ))
+  }
+
+  const handleDateTimezoneChange = (id, timezone) => {
+    setDateItems(dateItems.map(t => 
+      t.id === id ? { ...t, timezone } : t
+    ))
+  }
+
   const localTz = getLocalTimezone()
   const currentTimestamp = Math.floor(currentTime.getTime() / 1000)
 
@@ -199,122 +448,135 @@ const TimePage = () => {
     <ToolPage title="时间转换" description="时间戳与时间格式互转，支持多时区">
       <div className="space-y-6">
         {/* 当前时间 */}
-        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+        <Card className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg">
           <CardContent className="py-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <Clock className="h-8 w-8" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Clock className="h-10 w-10" />
+                </div>
                 <div>
-                  <div className="text-3xl font-mono font-bold">
+                  <div className="text-3xl font-mono font-bold tracking-wide">
                     {format(currentTime, 'yyyy-MM-dd HH:mm:ss')}
                   </div>
-                  <div className="text-sm opacity-90">
-                    {localTz}
+                  <div className="text-sm opacity-90 flex items-center gap-2">
+                    <Badge variant="secondary" className="text-white bg-white/20">
+                      {localTz}
+                    </Badge>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-mono font-bold">
+                <div className="text-2xl font-mono font-bold bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
                   {currentTimestamp}
                 </div>
-                <div className="text-sm opacity-90">
+                <div className="text-sm opacity-90 mt-1">
                   秒级时间戳
+                </div>
+                <div className="text-lg font-mono opacity-75">
+                  {currentTime.getTime()}
+                </div>
+                <div className="text-xs opacity-75">
+                  毫秒级时间戳
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 时间戳输入 */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span className="flex items-center">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                时间戳转换
-              </span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)}>
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  帮助
-                </Button>
-                <Button variant="default" size="sm" onClick={handleAddTimestamp}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  添加
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {timestamps.map((ts, index) => (
-              <div key={ts.id}>
-                <div className="flex items-end gap-4">
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground mb-1 block">
-                      时间戳 (秒)
-                    </Label>
-                    <Input
-                      placeholder="输入时间戳..."
-                      value={ts.value}
-                      onChange={(e) => handleTimestampChange(ts.id, e.target.value)}
-                      className="font-mono"
-                    />
+        {/* 转换类型选择 */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="ts-to-date" className="flex items-center gap-2">
+              <ArrowUp className="h-4 w-4" />
+              时间戳 → 日期
+            </TabsTrigger>
+            <TabsTrigger value="date-to-ts" className="flex items-center gap-2">
+              <ArrowDown className="h-4 w-4" />
+              日期 → 时间戳
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ts-to-date" className="mt-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center">
+                    <ArrowUp className="h-4 w-4 mr-2 text-blue-500" />
+                    时间戳转换为日期时间
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)}>
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      帮助
+                    </Button>
+                    <Button variant="default" size="sm" onClick={handleAddTimestamp}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      添加
+                    </Button>
                   </div>
-                  <div className="w-[200px]">
-                    <Label className="text-xs text-muted-foreground mb-1 block">
-                      时区
-                    </Label>
-                    <Select value={ts.timezone} onValueChange={(v) => handleTimezoneChange(ts.id, v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TIMEZONES.map(tz => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {timestamps.map((ts, index) => (
+                  <TimestampItem
+                    key={ts.id}
+                    ts={ts}
+                    index={index}
+                    onRemove={handleRemoveTimestamp}
+                    onChange={handleTimestampChange}
+                    onTimezoneChange={handleTimezoneChange}
+                    isLast={index === timestamps.length - 1}
+                    prevValue={index > 0 ? timestamps[index - 1].value : null}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="date-to-ts" className="mt-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center">
+                    <ArrowDown className="h-4 w-4 mr-2 text-green-500" />
+                    日期时间转换为时间戳
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)}>
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      帮助
+                    </Button>
+                    <Button variant="default" size="sm" onClick={handleAddDate}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      添加
+                    </Button>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleRemoveTimestamp(ts.id)}
-                    disabled={timestamps.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                {ts.value && (
-                  <div className="mt-2 p-2 rounded bg-muted/50 text-sm">
-                    <span className="text-muted-foreground">转换结果: </span>
-                    <span className="font-mono">
-                      {formatTimestamp(parseInt(ts.value) || 0, ts.timezone)}
-                    </span>
-                    <Badge variant="outline" className="ml-2">
-                      {ts.timezone}
-                    </Badge>
-                  </div>
-                )}
-                {index > 0 && ts.value && timestamps[index - 1].value && (
-                  <div className="mt-2 p-2 rounded bg-blue-50 dark:bg-blue-950/30 text-sm">
-                    <span className="text-muted-foreground">与上一个时间差: </span>
-                    <span className="font-mono text-blue-600 dark:text-blue-400">
-                      {formatTimeDiff(parseInt(ts.value) || 0, parseInt(timestamps[index - 1].value) || 0)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {dateItems.map((item, index) => (
+                  <DateItem
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    onRemove={handleRemoveDate}
+                    onChange={handleDateChange}
+                    onTimezoneChange={handleDateTimezoneChange}
+                    isLast={index === dateItems.length - 1}
+                    prevValue={index > 0 ? dateItems[index - 1].value : null}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* 帮助弹窗 */}
         <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>时间转换帮助</DialogTitle>
+              <DialogTitle className="text-xl">时间转换帮助</DialogTitle>
             </DialogHeader>
             <HelpContent />
           </DialogContent>
