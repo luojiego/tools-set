@@ -33,7 +33,7 @@ const formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const JsonEditorPanel = ({ value, onChange, label, badge }) => {
+const JsonEditorPanel = ({ value, onChange, label, badge, mode = 'tree' }) => {
   const containerRef = useRef(null)
   const editorRef = useRef(null)
 
@@ -41,7 +41,7 @@ const JsonEditorPanel = ({ value, onChange, label, badge }) => {
     if (!containerRef.current) return
 
     const options = {
-      mode: 'tree',
+      mode,
       modes: ['tree', 'code', 'form', 'text', 'preview'],
       onChangeText: (json) => {
         try {
@@ -243,7 +243,7 @@ const JsonPage = () => {
 
   return (
     <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录" fullWidth>
-      <div className="h-[calc(100vh-140px)] flex flex-col">
+      <div className="h-[calc(100vh-140px)] flex flex-col px-4">
         {/* 操作按钮 */}
         <div className="flex flex-wrap gap-2 flex-shrink-0">
           <Button onClick={handleFormat} variant="default" size="sm">
@@ -290,6 +290,7 @@ const JsonPage = () => {
                 onChange={setInput}
                 label="输入"
                 badge={`${input.length} 字符`}
+                mode="text"
               />
             </Panel>
             <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
