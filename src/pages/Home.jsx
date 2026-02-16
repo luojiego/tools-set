@@ -60,8 +60,7 @@ const tools = [
     description: 'JSON 格式化、验证、压缩等',
     icon: FileJson,
     href: '/tools/json',
-    color: 'from-yellow-500 to-amber-500',
-    disabled: true
+    color: 'from-yellow-500 to-amber-500'
   }
 ]
 
