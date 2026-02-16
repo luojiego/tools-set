@@ -37,26 +37,20 @@ const IpPage = () => {
 
     try {
       const url = ipAddress 
-        ? `https://ipapi.co/json/${ipAddress}/`
-        : `https://ipapi.co/json/`
+        ? `https://ipwho.is/${ipAddress}`
+        : `https://ipwho.is/`
       
       const response = await fetch(url)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'API request failed')
-      }
-      
       const data = await response.json()
 
-      if (data.error) {
-        setError(data.reason || '查询失败，请检查 IP 地址格式')
+      if (!data.success) {
+        setError(data.message || '查询失败，请检查 IP 地址格式')
         return
       }
 
       setResult(data)
     } catch (err) {
-      setError(err.message || '网络请求失败，请稍后重试')
+      setError('网络请求失败，请稍后重试')
     } finally {
       setLoading(false)
     }
@@ -96,15 +90,6 @@ const IpPage = () => {
       </div>
     </div>
   )
-
-  const getCountryFlag = (countryCode) => {
-    if (!countryCode) return ''
-    const codePoints = countryCode
-      .toUpperCase()
-      .split('')
-      .map(char => 127397 + char.charCodeAt(0))
-    return String.fromCodePoint(...codePoints)
-  }
 
   return (
     <ToolPage title="IP 地址查询" description="查询 IP 地址的地理位置、网络信息">
@@ -159,14 +144,14 @@ const IpPage = () => {
                   <Globe className="h-4 w-4" />
                   基本信息
                   <Badge variant="secondary">
-                    IP: {result.ip || result.query}
+                    IP: {result.ip}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <ResultField 
                   label="国家" 
-                  value={result.country_name ? `${getCountryFlag(result.country_code)} ${result.country_name}` : ''}
+                  value={result.country ? `${result.country_flag_emoji} ${result.country}` : ''}
                   icon={Globe}
                   copyKey="country"
                 />
@@ -195,7 +180,7 @@ const IpPage = () => {
                 />
                 <ResultField 
                   label="时区" 
-                  value={result.timezone}
+                  value={result.timezone?.id}
                   icon={Clock}
                   copyKey="timezone"
                 />
@@ -213,47 +198,48 @@ const IpPage = () => {
               <CardContent className="space-y-2">
                 <ResultField 
                   label="ISP" 
-                  value={result.org}
+                  value={result.connection?.isp}
                   icon={Building2}
                   copyKey="isp"
                 />
                 <ResultField 
+                  label="组织" 
+                  value={result.connection?.org}
+                  icon={Building2}
+                  copyKey="org"
+                />
+                <ResultField 
                   label="AS 号码" 
-                  value={result.asn}
+                  value={result.connection?.asn}
                   icon={Shield}
                   copyKey="asn"
                 />
                 <ResultField 
-                  label="网络类型" 
-                  value={result.network_type}
-                  icon={Wifi}
-                  copyKey="network"
+                  label="域名" 
+                  value={result.domain}
+                  icon={Globe}
+                  copyKey="domain"
                 />
                 <ResultField 
-                  label="运营商" 
-                  value={result.carrier}
-                  icon={Building2}
-                  copyKey="carrier"
+                  label="首都" 
+                  value={result.capital}
+                  icon={MapPin}
+                  copyKey="capital"
                 />
                 <ResultField 
                   label="货币" 
-                  value={result.currency_name ? `${result.currency_name} (${result.currency_code})` : ''}
+                  value={result.currency ? `${result.currency.name} (${result.currency.code})` : ''}
                   copyKey="currency"
-                />
-                <ResultField 
-                  label="语言" 
-                  value={result.languages}
-                  copyKey="lang"
                 />
               </CardContent>
             </Card>
 
-            {/* 安全信息 */}
+            {/* 其他信息 */}
             <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center">
                   <Shield className="h-4 w-4 mr-2" />
-                  安全信息
+                  其他信息
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -261,29 +247,16 @@ const IpPage = () => {
                   <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">代理</span>
+                      <span className="text-sm text-muted-foreground">呼叫代码</span>
                     </div>
-                    <Badge variant={result.proxy ? "destructive" : "secondary"}>
-                      {result.proxy ? "是" : "否"}
-                    </Badge>
+                    <span className="font-mono text-sm">{result.calling_code || '-'}</span>
                   </div>
                   <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
-                      <Wifi className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">VPN</span>
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">语言</span>
                     </div>
-                    <Badge variant={result.vpn ? "destructive" : "secondary"}>
-                      {result.vpn ? "是" : "否"}
-                    </Badge>
-                  </div>
-                  <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">数据中心</span>
-                    </div>
-                    <Badge variant={result.hosting ? "destructive" : "secondary"}>
-                      {result.hosting ? "是" : "否"}
-                    </Badge>
+                    <span className="font-mono text-sm">{result.languages?.[0]?.name || '-'}</span>
                   </div>
                 </div>
               </CardContent>
