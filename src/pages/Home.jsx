@@ -51,8 +51,7 @@ const tools = [
     description: '时间戳转换、时区转换等',
     icon: Clock,
     href: '/tools/time',
-    color: 'from-cyan-500 to-blue-500',
-    disabled: true
+    color: 'from-cyan-500 to-blue-500'
   },
   {
     id: 'json',

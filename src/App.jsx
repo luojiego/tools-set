@@ -4,7 +4,8 @@ import PasswordPage from './pages/PasswordPage'
 import CryptoPage from './pages/CryptoPage'
 import IdPage from './pages/IdPage'
 import JsonPage from './pages/JsonPage'
-import { IpPage, TimePage } from './pages/ComingSoon'
+import TimePage from './pages/TimePage'
+import { IpPage } from './pages/ComingSoon'
 
 function App() {
   return (
