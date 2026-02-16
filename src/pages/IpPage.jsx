@@ -36,15 +36,15 @@ const IpPage = () => {
     setResult(null)
 
     try {
-      const targetUrl = ipAddress 
+      const url = ipAddress 
         ? `https://ipapi.co/${ipAddress}/json/`
         : `https://ipapi.co/json/`
       
-      const response = await fetch(targetUrl)
+      const response = await fetch(url)
       const data = await response.json()
 
       if (data.error) {
-        setError(data.error || '查询失败，请检查 IP 地址格式')
+        setError(data.reason || '查询失败，请检查 IP 地址格式')
         return
       }
 
@@ -90,6 +90,15 @@ const IpPage = () => {
       </div>
     </div>
   )
+
+  const getCountryFlag = (countryCode) => {
+    if (!countryCode) return ''
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0))
+    return String.fromCodePoint(...codePoints)
+  }
 
   return (
     <ToolPage title="IP 地址查询" description="查询 IP 地址的地理位置、网络信息">
@@ -209,26 +218,27 @@ const IpPage = () => {
                   copyKey="asn"
                 />
                 <ResultField 
-                  label="网络类型" 
-                  value={result.network_type}
+                  label="网络" 
+                  value={result.network}
                   icon={Wifi}
                   copyKey="network"
                 />
                 <ResultField 
-                  label="运营商" 
-                  value={result.carrier}
-                  icon={Building2}
-                  copyKey="carrier"
+                  label="版本" 
+                  value={result.version}
+                  icon={Globe}
+                  copyKey="version"
+                />
+                <ResultField 
+                  label="首都" 
+                  value={result.country_capital}
+                  icon={MapPin}
+                  copyKey="capital"
                 />
                 <ResultField 
                   label="货币" 
-                  value={result.currency_name ? `${result.currency_name} (${result.currency_code})` : ''}
+                  value={result.currency_name ? `${result.currency_name} (${result.currency})` : ''}
                   copyKey="currency"
-                />
-                <ResultField 
-                  label="语言" 
-                  value={result.languages}
-                  copyKey="lang"
                 />
               </CardContent>
             </Card>
@@ -246,20 +256,23 @@ const IpPage = () => {
                   <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">代理/VPN</span>
+                      <span className="text-sm text-muted-foreground">呼叫代码</span>
                     </div>
-                    <Badge variant={result.proxy || result.vpn ? "destructive" : "secondary"}>
-                      {result.proxy || result.vpn ? "是" : "否"}
-                    </Badge>
+                    <span className="font-mono text-sm">{result.country_calling_code || '-'}</span>
                   </div>
                   <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">数据中心</span>
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">语言</span>
                     </div>
-                    <Badge variant={result.hosting ? "destructive" : "secondary"}>
-                      {result.hosting ? "是" : "否"}
-                    </Badge>
+                    <span className="font-mono text-sm">{result.languages || '-'}</span>
+                  </div>
+                  <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">国家 TLD</span>
+                    </div>
+                    <span className="font-mono text-sm">{result.country_tld || '-'}</span>
                   </div>
                 </div>
               </CardContent>
