@@ -42,8 +42,7 @@ const tools = [
     description: '查询IP地址归属地和详细信息',
     icon: Globe,
     href: '/tools/ip',
-    color: 'from-orange-500 to-red-500',
-    disabled: true
+    color: 'from-orange-500 to-red-500'
   },
   {
     id: 'time',
