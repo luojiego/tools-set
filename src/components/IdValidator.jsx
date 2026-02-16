@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
@@ -185,30 +184,24 @@ const IdValidator = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 输入区域 */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">身份证号码</Label>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
           <Input
             value={idNumber}
             onChange={handleInputChange}
             placeholder="请输入18位身份证号码"
-            className="font-mono text-lg"
+            className="font-mono text-base"
             maxLength={18}
           />
-          <p className="text-xs text-muted-foreground">
-            支持18位二代身份证号码，最后一位可以是数字或字母X
-          </p>
         </div>
-
         <Button 
           onClick={handleValidate}
           disabled={!idNumber.trim()}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+          className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
         >
-          <CheckCircle className="h-4 w-4 mr-2" />
-          验证身份证
+          验证
         </Button>
       </div>
 
@@ -218,45 +211,32 @@ const IdValidator = () => {
           ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800' 
           : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-red-200 dark:border-red-800'
         }`}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center space-x-2 text-base">
               {validationResult.isValid ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-green-500" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-500" />
+                <XCircle className="h-4 w-4 text-red-500" />
               )}
-              <span>
-                {validationResult.isValid ? '验证通过' : '验证失败'}
-              </span>
-              <Badge variant={validationResult.isValid ? 'default' : 'destructive'}>
+              <span>{validationResult.isValid ? '验证通过' : '验证失败'}</span>
+              <Badge variant={validationResult.isValid ? 'default' : 'destructive'} className="text-xs">
                 {validationResult.isValid ? '有效' : '无效'}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {/* 错误信息 */}
-            {validationResult.errors.length > 0 && (
-              <div className="space-y-2">
-                {validationResult.errors.map((error, index) => (
-                  <Alert key={index} variant="destructive">
-                    <XCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                ))}
-              </div>
-            )}
-
-            {/* 警告信息 */}
-            {validationResult.warnings.length > 0 && (
-              <div className="space-y-2">
-                {validationResult.warnings.map((warning, index) => (
-                  <Alert key={index}>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>{warning}</AlertDescription>
-                  </Alert>
-                ))}
-              </div>
-            )}
+          <CardContent className="space-y-2">
+            {validationResult.errors.map((error, index) => (
+              <Alert key={index} variant="destructive" className="py-2">
+                <XCircle className="h-3.5 w-3.5" />
+                <AlertDescription className="text-sm">{error}</AlertDescription>
+              </Alert>
+            ))}
+            {validationResult.warnings.map((warning, index) => (
+              <Alert key={index} className="py-2">
+                <Info className="h-3.5 w-3.5" />
+                <AlertDescription className="text-sm">{warning}</AlertDescription>
+              </Alert>
+            ))}
           </CardContent>
         </Card>
       )}
@@ -264,64 +244,43 @@ const IdValidator = () => {
       {/* 身份证信息解析 */}
       {idInfo && (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Info className="h-5 w-5 text-blue-500" />
-              <span>身份证信息解析</span>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center space-x-2">
+              <Info className="h-4 w-4 text-blue-500" />
+              <span>身份证信息</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3">
-                <MapPin className="h-4 w-4 text-blue-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-3.5 w-3.5 text-blue-500" />
                 <div>
-                  <p className="text-sm text-muted-foreground">归属地</p>
-                  <p className="font-medium">{idInfo.province}</p>
-                  <p className="text-xs text-muted-foreground">
-                    省份代码: {idInfo.provinceCode}
-                  </p>
+                  <p className="text-xs text-muted-foreground">归属地</p>
+                  <p className="font-medium text-sm">{idInfo.province}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-4 w-4 text-green-500" />
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-3.5 w-3.5 text-green-500" />
                 <div>
-                  <p className="text-sm text-muted-foreground">出生日期</p>
-                  <p className="font-medium">{idInfo.birthDate}</p>
-                  <p className="text-xs text-muted-foreground">
-                    年龄: {idInfo.age} 岁
-                  </p>
+                  <p className="text-xs text-muted-foreground">出生日期</p>
+                  <p className="font-medium text-sm">{idInfo.birthDate}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <User className="h-4 w-4 text-purple-500" />
+              <div className="flex items-center space-x-2">
+                <User className="h-3.5 w-3.5 text-purple-500" />
                 <div>
-                  <p className="text-sm text-muted-foreground">性别</p>
-                  <p className="font-medium">{idInfo.gender}</p>
-                  <p className="text-xs text-muted-foreground">
-                    根据倒数第二位数字判断
-                  </p>
+                  <p className="text-xs text-muted-foreground">性别</p>
+                  <p className="font-medium text-sm">{idInfo.gender}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <CheckCircle className="h-4 w-4 text-orange-500" />
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-3.5 w-3.5 text-orange-500" />
                 <div>
-                  <p className="text-sm text-muted-foreground">校验位</p>
-                  <p className="font-medium">
-                    {idInfo.checkDigit}
-                    {idInfo.checkDigit === idInfo.calculatedCheckDigit ? (
-                      <Badge variant="default" className="ml-2 bg-green-500">正确</Badge>
-                    ) : (
-                      <Badge variant="destructive" className="ml-2">
-                        错误 (应为 {idInfo.calculatedCheckDigit})
-                      </Badge>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    序列码: {idInfo.sequenceCode}
-                  </p>
+                  <p className="text-xs text-muted-foreground">年龄</p>
+                  <p className="font-medium text-sm">{idInfo.age} 岁</p>
                 </div>
               </div>
             </div>
@@ -331,17 +290,15 @@ const IdValidator = () => {
 
       {/* 说明信息 */}
       <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
-        <CardContent className="p-4">
-          <h4 className="font-medium mb-2 flex items-center space-x-2">
-            <Info className="h-4 w-4 text-yellow-600" />
-            <span>身份证号码规则说明</span>
-          </h4>
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>• 身份证号码由18位数字组成，最后一位可能是字母X</p>
-            <p>• 前6位为地区代码，7-14位为出生日期，15-17位为顺序码</p>
-            <p>• 第17位数字为性别标识：奇数为男性，偶数为女性</p>
-            <p>• 第18位为校验码，通过前17位数字计算得出</p>
-            <p>• 本工具仅验证号码格式和校验位，不验证真实性</p>
+        <CardContent className="p-3">
+          <div className="flex items-start space-x-2">
+            <Info className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>• 身份证号码由18位数字组成，最后一位可能是字母X</p>
+              <p>• 前6位为地区代码，7-14位为出生日期，15-17位为顺序码</p>
+              <p>• 第17位数字为性别标识：奇数为男性，偶数为女性</p>
+              <p>• 第18位为校验码，通过前17位数字计算得出</p>
+            </div>
           </div>
         </CardContent>
       </Card>

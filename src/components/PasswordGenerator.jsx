@@ -6,8 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox.jsx'
 import { Slider } from '@/components/ui/slider.jsx'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Copy, RefreshCw, Eye, EyeOff, Settings } from 'lucide-react'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.jsx'
+import { Copy, RefreshCw, Eye, EyeOff } from 'lucide-react'
 
 const PasswordGenerator = () => {
   const [password, setPassword] = useState('')
@@ -16,13 +15,9 @@ const PasswordGenerator = () => {
     lowercase: true,
     uppercase: true,
     numbers: true,
-    symbols: false,
-    // 隐藏选项
-    numbersOnly: false,
-    lettersOnly: false
+    symbols: false
   })
   const [showPassword, setShowPassword] = useState(true)
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const generatePassword = () => {
@@ -120,23 +115,24 @@ const PasswordGenerator = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 密码显示区域 */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="p-6">
-          <div className="space-y-4">
+        <CardContent className="p-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">生成的密码</Label>
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className={`${strength.color} text-white border-0`}>
-                  强度: {strength.text}
+                <Badge variant="outline" className={`${strength.color} text-white border-0 text-xs`}>
+                  {strength.text}
                 </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowPassword(!showPassword)}
+                  className="h-7 w-7 p-0"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </Button>
               </div>
             </div>
@@ -145,26 +141,26 @@ const PasswordGenerator = () => {
               <Input
                 value={showPassword ? password : '•'.repeat(password.length)}
                 readOnly
-                className="pr-20 font-mono text-lg bg-white dark:bg-gray-800"
+                className="pr-16 font-mono text-base bg-white dark:bg-gray-800 h-10"
                 placeholder="点击生成密码..."
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-1">
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex space-x-1">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={copyToClipboard}
                   disabled={!password}
-                  className="h-8 w-8 p-0"
+                  className="h-7 w-7 p-0"
                 >
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={generatePassword}
-                  className="h-8 w-8 p-0"
+                  className="h-7 w-7 p-0"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -176,106 +172,68 @@ const PasswordGenerator = () => {
         </CardContent>
       </Card>
 
-      {/* 密码长度设置 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">密码长度</Label>
-          <span className="text-sm text-muted-foreground">{length[0]} 位</span>
+      {/* 密码长度和字符类型 - 左右分栏 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* 密码长度设置 */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">密码长度</Label>
+            <span className="text-sm text-muted-foreground">{length[0]} 位</span>
+          </div>
+          <Slider
+            value={length}
+            onValueChange={setLength}
+            max={50}
+            min={4}
+            step={1}
+            className="w-full"
+          />
         </div>
-        <Slider
-          value={length}
-          onValueChange={setLength}
-          max={50}
-          min={4}
-          step={1}
-          className="w-full"
-        />
-      </div>
 
-      {/* 字符类型选择 */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">字符类型</Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="lowercase"
-              checked={options.lowercase}
-              onCheckedChange={(checked) => handleOptionChange('lowercase', checked)}
-            />
-            <Label htmlFor="lowercase" className="text-sm">小写字母 (a-z)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="uppercase"
-              checked={options.uppercase}
-              onCheckedChange={(checked) => handleOptionChange('uppercase', checked)}
-            />
-            <Label htmlFor="uppercase" className="text-sm">大写字母 (A-Z)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="numbers"
-              checked={options.numbers}
-              onCheckedChange={(checked) => handleOptionChange('numbers', checked)}
-            />
-            <Label htmlFor="numbers" className="text-sm">数字 (0-9)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="symbols"
-              checked={options.symbols}
-              onCheckedChange={(checked) => handleOptionChange('symbols', checked)}
-            />
-            <Label htmlFor="symbols" className="text-sm">特殊字符 (!@#$...)</Label>
-          </div>
-        </div>
-      </div>
-
-      {/* 高级选项 */}
-      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between">
+        {/* 字符类型选择 */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">字符类型</Label>
+          <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>高级选项</span>
+              <Checkbox
+                id="lowercase"
+                checked={options.lowercase}
+                onCheckedChange={(checked) => handleOptionChange('lowercase', checked)}
+              />
+              <Label htmlFor="lowercase" className="text-xs">小写字母</Label>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {showAdvanced ? '收起' : '展开'}
-            </span>
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4 pt-4">
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-              ⚠️ 以下选项会覆盖上面的常规设置
-            </p>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="numbersOnly"
-                  checked={options.numbersOnly}
-                  onCheckedChange={(checked) => handleOptionChange('numbersOnly', checked)}
-                />
-                <Label htmlFor="numbersOnly" className="text-sm">仅数字</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="lettersOnly"
-                  checked={options.lettersOnly}
-                  onCheckedChange={(checked) => handleOptionChange('lettersOnly', checked)}
-                />
-                <Label htmlFor="lettersOnly" className="text-sm">仅字母</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="uppercase"
+                checked={options.uppercase}
+                onCheckedChange={(checked) => handleOptionChange('uppercase', checked)}
+              />
+              <Label htmlFor="uppercase" className="text-xs">大写字母</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="numbers"
+                checked={options.numbers}
+                onCheckedChange={(checked) => handleOptionChange('numbers', checked)}
+              />
+              <Label htmlFor="numbers" className="text-xs">数字</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="symbols"
+                checked={options.symbols}
+                onCheckedChange={(checked) => handleOptionChange('symbols', checked)}
+              />
+              <Label htmlFor="symbols" className="text-xs">特殊字符</Label>
             </div>
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      </div>
 
       {/* 生成按钮 */}
       <Button 
         onClick={generatePassword} 
         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-        size="lg"
       >
         <RefreshCw className="h-4 w-4 mr-2" />
         生成密码

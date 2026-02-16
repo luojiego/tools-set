@@ -5,8 +5,7 @@ import { Label } from '@/components/ui/label.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Input } from '@/components/ui/input.jsx'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
-import { Copy, Lock, Unlock, AlertCircle } from 'lucide-react'
+import { Copy, Lock, Unlock, AlertCircle, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
 
 const CryptoTool = () => {
@@ -207,50 +206,64 @@ const CryptoTool = () => {
   const currentAlgorithm = algorithms.find(alg => alg.value === algorithm)
 
   return (
-    <div className="space-y-6">
-      {/* 算法选择 */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">选择算法</Label>
-        <Select value={algorithm} onValueChange={setAlgorithm}>
-          <SelectTrigger>
-            <SelectValue placeholder="选择加密算法" />
-          </SelectTrigger>
-          <SelectContent>
-            {algorithms.map((alg) => (
-              <SelectItem key={alg.value} value={alg.value}>
-                {alg.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-4">
+      {/* 算法选择和密钥 */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <Label className="text-sm font-medium mb-1.5 block">选择算法</Label>
+          <Select value={algorithm} onValueChange={setAlgorithm}>
+            <SelectTrigger>
+              <SelectValue placeholder="选择加密算法" />
+            </SelectTrigger>
+            <SelectContent>
+              {algorithms.map((alg) => (
+                <SelectItem key={alg.value} value={alg.value}>
+                  {alg.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {currentAlgorithm?.needsKey && (
+          <div className="flex-1">
+            <Label className="text-sm font-medium mb-1.5 block">密钥</Label>
+            <Input
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="请输入密钥"
+              type="password"
+            />
+          </div>
+        )}
       </div>
 
-      {/* 密钥输入 */}
-      {currentAlgorithm?.needsKey && (
+      {/* 输入输出 - 左右分栏 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 输入区域 */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">密钥</Label>
-          <Input
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="请输入密钥"
-            type="password"
+          <Label className="text-sm font-medium">输入文本</Label>
+          <Textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="请输入要处理的文本..."
+            className="min-h-[180px] font-mono text-sm"
           />
         </div>
-      )}
 
-      {/* 输入文本 */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">输入文本</Label>
-        <Textarea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="请输入要处理的文本..."
-          className="min-h-[120px] font-mono"
-        />
+        {/* 输出区域 */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">输出结果</Label>
+          <Textarea
+            value={outputText}
+            readOnly
+            placeholder="处理结果将显示在这里..."
+            className="min-h-[180px] font-mono text-sm bg-muted/50"
+          />
+        </div>
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex space-x-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <Button 
           onClick={handleEncrypt}
           disabled={!inputText.trim()}
@@ -271,73 +284,42 @@ const CryptoTool = () => {
             解密/解码
           </Button>
         )}
+        
+        {outputText && (
+          <Button variant="outline" onClick={copyToClipboard}>
+            <Copy className="h-4 w-4 mr-2" />
+            复制
+          </Button>
+        )}
       </div>
 
       {/* 错误提示 */}
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="py-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {/* 输出结果 */}
-      {outputText && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center justify-between">
-              <span>处理结果</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyToClipboard}
-                className="h-8 w-8 p-0"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={outputText}
-              readOnly
-              className="min-h-[120px] font-mono bg-white dark:bg-gray-800"
-            />
-            {copied && (
-              <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                已复制到剪贴板!
-              </p>
-            )}
-          </CardContent>
-        </Card>
+      {/* 复制成功提示 */}
+      {copied && (
+        <p className="text-sm text-green-600 dark:text-green-400">已复制到剪贴板!</p>
       )}
 
       {/* 算法说明 */}
       <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="p-4">
-          <h4 className="font-medium mb-2">算法说明</h4>
-          <div className="text-sm text-muted-foreground space-y-1">
-            {algorithm === 'base64' && (
-              <p>Base64 是一种基于64个可打印字符来表示二进制数据的表示方法，常用于数据传输。</p>
-            )}
-            {algorithm === 'url' && (
-              <p>URL 编码将特殊字符转换为百分号编码格式，确保 URL 的正确传输。</p>
-            )}
-            {algorithm === 'html' && (
-              <p>HTML 编码将特殊字符转换为 HTML 实体，防止 XSS 攻击。</p>
-            )}
-            {algorithm === 'md5' && (
-              <p>MD5 是一种广泛使用的哈希函数，产生128位哈希值。注意：MD5 已不够安全，仅用于演示。</p>
-            )}
-            {algorithm === 'sha256' && (
-              <p>SHA256 是 SHA-2 系列的一种，产生256位哈希值，比 MD5 更安全。</p>
-            )}
-            {algorithm === 'caesar' && (
-              <p>凯撒密码是一种简单的替换密码，通过将字母向后移动固定位数来加密。</p>
-            )}
-            {algorithm === 'substitution' && (
-              <p>替换密码使用密钥中的字符替换原文中的字符，需要提供密钥。</p>
-            )}
+        <CardContent className="p-3">
+          <div className="flex items-start space-x-2">
+            <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-muted-foreground">
+              {algorithm === 'base64' && 'Base64 是一种基于64个可打印字符来表示二进制数据的表示方法，常用于数据传输。'}
+              {algorithm === 'url' && 'URL 编码将特殊字符转换为百分号编码格式，确保 URL 的正确传输。'}
+              {algorithm === 'html' && 'HTML 编码将特殊字符转换为 HTML 实体，防止 XSS 攻击。'}
+              {algorithm === 'md5' && 'MD5 是一种广泛使用的哈希函数，产生128位哈希值。注意：MD5 已不够安全，仅用于演示。'}
+              {algorithm === 'sha256' && 'SHA256 是 SHA-2 系列的一种，产生256位哈希值，比 MD5 更安全。'}
+              {algorithm === 'caesar' && '凯撒密码是一种简单的替换密码，通过将字母向后移动固定位数来加密。'}
+              {algorithm === 'substitution' && '替换密码使用密钥中的字符替换原文中的字符，需要提供密钥。'}
+            </div>
           </div>
         </CardContent>
       </Card>
