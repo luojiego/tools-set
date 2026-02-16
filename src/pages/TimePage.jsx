@@ -721,7 +721,7 @@ const TimePage = () => {
 
         {/* 帮助弹窗 */}
         <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
-          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+          <DialogContent size="full" className="max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl">时间转换帮助</DialogTitle>
             </DialogHeader>
