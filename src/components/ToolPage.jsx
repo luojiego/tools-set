@@ -18,7 +18,7 @@ const tools = [
   { id: 'id', title: '身份证校验', icon: CreditCard, href: '/tools/id' },
   { id: 'ip', title: 'IP查询', icon: Globe, href: '/tools/ip', disabled: true },
   { id: 'time', title: '时间转换', icon: Clock, href: '/tools/time', disabled: true },
-  { id: 'json', title: 'JSON工具', icon: FileJson, href: '/tools/json', disabled: true }
+  { id: 'json', title: 'JSON工具', icon: FileJson, href: '/tools/json' }
 ]
 
 const ToolPage = ({ children, title, description }) => {
