@@ -242,8 +242,8 @@ const JsonPage = () => {
   const totalSize = history.reduce((acc, item) => acc + item.size, 0)
 
   return (
-    <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录">
-      <div className="h-[calc(100vh-180px)] flex flex-col space-y-4">
+    <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录" fullWidth>
+      <div className="h-[calc(100vh-140px)] flex flex-col">
         {/* 操作按钮 */}
         <div className="flex flex-wrap gap-2 flex-shrink-0">
           <Button onClick={handleFormat} variant="default" size="sm">

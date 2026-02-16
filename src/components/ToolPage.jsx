@@ -21,7 +21,7 @@ const tools = [
   { id: 'json', title: 'JSON工具', icon: FileJson, href: '/tools/json' }
 ]
 
-const ToolPage = ({ children, title, description }) => {
+const ToolPage = ({ children, title, description, fullWidth = false }) => {
   const location = useLocation()
   const currentIndex = tools.findIndex(t => t.href === location.pathname)
   
@@ -65,8 +65,8 @@ const ToolPage = ({ children, title, description }) => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        <div className="max-w-5xl mx-auto">
+      <main className={`container mx-auto px-4 py-6 ${fullWidth ? '' : ''}`}>
+        <div className={fullWidth ? '' : 'max-w-5xl mx-auto'}>
           {/* 页面标题 */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold">{title}</h1>
