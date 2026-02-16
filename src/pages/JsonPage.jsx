@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button.jsx'
-import { Textarea } from '@/components/ui/textarea.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { ScrollArea } from '@/components/ui/scroll-area.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import JSONEditor from 'jsoneditor'
+import 'jsoneditor/dist/jsoneditor.css'
 import ToolPage from '@/components/ToolPage'
 import { 
-  FileJson, 
   Save, 
   Trash2, 
   Copy, 
   Check,
   AlertCircle,
   Clock,
-  FileOutput,
-  FileInput,
   Minimize2,
-  RotateCcw
+  RotateCcw,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react'
 
 const STORAGE_KEY = 'json_tool_history'
@@ -32,13 +33,95 @@ const formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+const JsonEditorPanel = ({ value, onChange, label, badge }) => {
+  const containerRef = useRef(null)
+  const editorRef = useRef(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const options = {
+      mode: 'tree',
+      modes: ['tree', 'code', 'form', 'text', 'preview'],
+      onChangeText: (json) => {
+        try {
+          JSON.parse(json)
+          onChange(json)
+        } catch (e) {
+        }
+      },
+      onChange: () => {
+        if (editorRef.current) {
+          const json = editorRef.current.get()
+          onChange(JSON.stringify(json, null, 2))
+        }
+      },
+      enableDrag: true,
+      enableSort: true,
+      enableTransform: true,
+      mainMenuBar: true,
+      navigationBar: true,
+      statusBar: true,
+      theme: 'os dark'
+    }
+
+    editorRef.current = new JSONEditor(containerRef.current, options)
+
+    try {
+      const parsed = JSON.parse(value || '{}')
+      editorRef.current.set(parsed)
+    } catch (e) {
+      editorRef.current.setText(value || '')
+    }
+
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.destroy()
+        editorRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (editorRef.current && value) {
+      try {
+        const currentJson = editorRef.current.get()
+        const currentStr = JSON.stringify(currentJson)
+        if (currentStr !== value && currentStr !== JSON.stringify(JSON.parse(value))) {
+          const parsed = JSON.parse(value)
+          editorRef.current.set(parsed)
+        }
+      } catch (e) {
+        editorRef.current.setText(value)
+      }
+    }
+  }, [value])
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 flex-shrink-0">
+        <CardTitle className="text-sm font-medium flex items-center justify-between">
+          <span>{label}</span>
+          <Badge variant="secondary">{badge}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 min-h-0 p-2">
+        <div 
+          ref={containerRef} 
+          className="h-full w-full json-editor-container"
+          style={{ minHeight: '400px' }}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 const JsonPage = () => {
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState('{\n  \n}')
   const [output, setOutput] = useState('')
   const [error, setError] = useState('')
   const [history, setHistory] = useState([])
   const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState('input')
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -76,31 +159,29 @@ const JsonPage = () => {
     return true
   }
 
-  const handleFormat = () => {
+  const handleFormat = useCallback(() => {
     try {
       const parsed = JSON.parse(input)
       const formatted = JSON.stringify(parsed, null, 2)
       setOutput(formatted)
       setError('')
-      setActiveTab('output')
     } catch (e) {
       setError('JSON 格式错误: ' + e.message)
     }
-  }
+  }, [input])
 
-  const handleCompress = () => {
+  const handleCompress = useCallback(() => {
     try {
       const parsed = JSON.parse(input)
       const compressed = JSON.stringify(parsed)
       setOutput(compressed)
       setError('')
-      setActiveTab('output')
     } catch (e) {
       setError('JSON 格式错误: ' + e.message)
     }
-  }
+  }, [input])
 
-  const handleValidate = () => {
+  const handleValidate = useCallback(() => {
     try {
       JSON.parse(input)
       setOutput('Valid JSON')
@@ -108,10 +189,10 @@ const JsonPage = () => {
     } catch (e) {
       setError('JSON 格式错误: ' + e.message)
     }
-  }
+  }, [input])
 
   const handleSave = () => {
-    const content = activeTab === 'output' ? output : input
+    const content = output || input
     if (!content.trim()) {
       setError('没有可保存的内容')
       return
@@ -124,7 +205,7 @@ const JsonPage = () => {
   }
 
   const handleCopy = async () => {
-    const content = activeTab === 'output' ? output : input
+    const content = output || input
     await navigator.clipboard.writeText(content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -132,8 +213,6 @@ const JsonPage = () => {
 
   const handleLoadFromHistory = (item) => {
     setInput(item.content)
-    setOutput(item.content)
-    setActiveTab('input')
     setError('')
   }
 
@@ -149,33 +228,40 @@ const JsonPage = () => {
   }
 
   const handleClear = () => {
-    setInput('')
+    setInput('{\n  \n}')
     setOutput('')
     setError('')
+  }
+
+  const handleCopyToInput = () => {
+    if (output) {
+      setInput(output)
+    }
   }
 
   const totalSize = history.reduce((acc, item) => acc + item.size, 0)
 
   return (
     <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录">
-      <div className="space-y-4">
+      <div className="h-[calc(100vh-180px)] flex flex-col space-y-4">
         {/* 操作按钮 */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 flex-shrink-0">
           <Button onClick={handleFormat} variant="default" size="sm">
-            <FileOutput className="h-4 w-4 mr-2" />
             格式化
           </Button>
           <Button onClick={handleCompress} variant="default" size="sm">
-            <Minimize2 className="h-4 w-4 mr-2" />
             压缩
           </Button>
           <Button onClick={handleValidate} variant="outline" size="sm">
-            <Check className="h-4 w-4 mr-2" />
             验证
           </Button>
           <Button onClick={handleCopy} variant="outline" size="sm">
             {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
             {copied ? '已复制' : '复制'}
+          </Button>
+          <Button onClick={handleCopyToInput} variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            复制到输入
           </Button>
           <Button onClick={handleSave} variant="default" size="sm">
             <Save className="h-4 w-4 mr-2" />
@@ -189,58 +275,37 @@ const JsonPage = () => {
 
         {/* 错误提示 */}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="flex-shrink-0">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* 输入输出区域 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <span className="flex items-center">
-                  <FileInput className="h-4 w-4 mr-2" />
-                  输入
-                </span>
-                <Badge variant="secondary">{input.length} 字符</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
+        {/* 编辑器区域 */}
+        <div className="flex-1 min-h-0">
+          <PanelGroup direction="horizontal" className="h-full">
+            <Panel defaultSize={50} minSize={30}>
+              <JsonEditorPanel
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="在此输入 JSON..."
-                className="min-h-[300px] font-mono text-sm"
+                onChange={setInput}
+                label="输入"
+                badge={`${input.length} 字符`}
               />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <span className="flex items-center">
-                  <FileOutput className="h-4 w-4 mr-2" />
-                  输出
-                </span>
-                <Badge variant="secondary">{output.length} 字符</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
+            </Panel>
+            <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
+            <Panel defaultSize={50} minSize={30}>
+              <JsonEditorPanel
                 value={output}
-                onChange={(e) => setOutput(e.target.value)}
-                placeholder="结果将显示在这里..."
-                className="min-h-[300px] font-mono text-sm"
-                readOnly={false}
+                onChange={setOutput}
+                label="输出"
+                badge={`${output.length} 字符`}
               />
-            </CardContent>
-          </Card>
+            </Panel>
+          </PanelGroup>
         </div>
 
         {/* 历史记录 */}
-        <Card>
+        <Card className="flex-shrink-0 max-h-[200px]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center justify-between">
               <span className="flex items-center">
@@ -262,13 +327,13 @@ const JsonPage = () => {
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {history.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-4">
                 暂无历史记录
               </p>
             ) : (
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[120px]">
                 <div className="space-y-2">
                   {history.map((item) => (
                     <div
@@ -283,8 +348,8 @@ const JsonPage = () => {
                           {new Date(item.timestamp).toLocaleString('zh-CN')}
                         </div>
                         <div className="text-sm font-mono truncate max-w-md">
-                          {item.content.slice(0, 100)}
-                          {item.content.length > 100 ? '...' : ''}
+                          {item.content.slice(0, 80)}
+                          {item.content.length > 80 ? '...' : ''}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {formatBytes(item.size)}
