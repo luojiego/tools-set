@@ -48,7 +48,17 @@ const getLocalTimezone = () => {
 const formatTimestamp = (ts, timezone) => {
   try {
     const date = new Date(ts * 1000)
-    return format(date, 'yyyy-MM-dd HH:mm:ss', { locale: zhCN })
+    const formatter = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    return formatter.format(date).replace(/\//g, '-')
   } catch (e) {
     return '无效时间戳'
   }
@@ -72,12 +82,69 @@ const formatTimeDiff = (ts1, ts2) => {
 
 const HelpContent = () => {
   const [copied, setCopied] = useState('')
+  const [activeTab, setActiveTab] = useState('basics')
 
   const copyToClipboard = (text, key) => {
     navigator.clipboard.writeText(text)
     setCopied(key)
     setTimeout(() => setCopied(''), 2000)
   }
+
+  const basicsContent = [
+    {
+      title: '什么是时间戳？',
+      content: `时间戳（Timestamp）是表示从1970年1月1日 00:00:00 UTC 到指定日期所经过的秒数（毫秒数）。
+
+例如：
+• 1699900800 秒 = 2023-11-13 10:00:00 UTC
+• 1704067200 秒 = 2024-01-01 00:00:00 UTC
+
+时间戳的特点：
+• 与时区无关 - 同一个时间戳在全球任何地方都表示同一个瞬间
+• 便于存储和计算 - 只需要一个数字就能表示一个时间点
+• 易于排序和比较`
+    },
+    {
+      title: '什么是时区？',
+      content: `时区是地球上同一理论时间一致的区域。世界划分为24个时区，每个时区相差1小时。
+
+常见时区：
+• UTC (Coordinated Universal Time) - 世界标准时间
+• Asia/Shanghai (UTC+8) - 中国标准时间
+• America/New_York (UTC-5) - 美国东部时间
+• Europe/London (UTC+0) - 英国时间
+
+注意：中国虽然地理上跨5个时区，但全国统一使用 UTC+8`
+    },
+    {
+      title: '秒级 vs 毫秒级',
+      content: `时间戳有两种精度：
+• 秒级时间戳：10位数字，如 1699900800
+• 毫秒级时间戳：13位数字，如 1699900800000
+
+转换关系：
+• 毫秒级 = 秒级 × 1000
+• 秒级 = 毫秒级 ÷ 1000
+
+不同编程语言默认使用不同精度：
+• JavaScript/Java 使用毫秒级
+• Python/Go 使用秒级
+• PHP 可配置`
+    },
+    {
+      title: '夏令时 (DST)',
+      content: `夏令时（Daylight Saving Time）是一种在夏季调快时钟的制度。
+
+注意事项：
+• 夏令时期间，时区偏移会发生变化
+• 涉及夏令时的转换建议使用专业的时区库
+• 中国不使用夏令时，但欧美国家使用
+
+例如：
+• 美国纽约标准时间 UTC-5
+• 夏令时期间变为 UTC-4（提前1小时）`
+    }
+  ]
 
   const cliCommands = [
     { os: 'Linux/macOS', tsToDate: 'date -d @1699900800', dateToTs: 'date -d "2023-11-13 10:00:00" +%s' },
@@ -102,121 +169,127 @@ const HelpContent = () => {
 
   return (
     <div className="space-y-6">
-      <Accordion type="single" collapsible defaultValue="cli">
-        <AccordionItem value="cli">
-          <AccordionTrigger className="text-base font-semibold">
-            <div className="flex items-center">
-              <Terminal className="h-5 w-5 mr-2 text-blue-500" />
-              命令行时间转换
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
-                  <ArrowUp className="h-4 w-4 mr-1" />
-                  时间戳 → 日期
-                </h4>
-                <div className="grid gap-2">
-                  {cliCommands.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                      <div>
-                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{item.os}</span>
-                        <code className="block text-sm mt-1">{item.tsToDate}</code>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => copyToClipboard(item.tsToDate, `tsToDate-${i}`)}
-                      >
-                        {copied === `tsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
-                  <ArrowDown className="h-4 w-4 mr-1" />
-                  日期 → 时间戳
-                </h4>
-                <div className="grid gap-2">
-                  {cliCommands.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                      <div>
-                        <span className="text-xs font-medium text-green-600 dark:text-green-400">{item.os}</span>
-                        <code className="block text-sm mt-1">{item.dateToTs}</code>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => copyToClipboard(item.dateToTs, `dateToTs-${i}`)}
-                      >
-                        {copied === `dateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="basics">基本常识</TabsTrigger>
+          <TabsTrigger value="cli">命令行</TabsTrigger>
+          <TabsTrigger value="code">编程语言</TabsTrigger>
+        </TabsList>
 
-        <AccordionItem value="code">
-          <AccordionTrigger className="text-base font-semibold">
-            <div className="flex items-center">
-              <Code className="h-5 w-5 mr-2 text-purple-500" />
-              编程语言时间转换
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
-                  <ArrowUp className="h-4 w-4 mr-1" />
-                  时间戳 → 日期
+        <TabsContent value="basics" className="mt-6">
+          <div className="space-y-4">
+            {basicsContent.map((item, i) => (
+              <div key={i} className="p-4 rounded-lg border bg-card">
+                <h4 className="font-semibold text-base mb-2 flex items-center">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm mr-2">
+                    {i + 1}
+                  </span>
+                  {item.title}
                 </h4>
-                <div className="grid gap-2">
-                  {langExamples.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                      <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
-                      <code className="flex-1 text-sm ml-2 truncate">{item.tsToDate}</code>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => copyToClipboard(item.tsToDate, `langTsToDate-${i}`)}
-                      >
-                        {copied === `langTsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-mono bg-muted p-3 rounded">{item.content}</pre>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
-                  <ArrowDown className="h-4 w-4 mr-1" />
-                  日期 → 时间戳
-                </h4>
-                <div className="grid gap-2">
-                  {langExamples.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                      <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
-                      <code className="flex-1 text-sm ml-2 truncate">{item.dateToTs}</code>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => copyToClipboard(item.dateToTs, `langDateToTs-${i}`)}
-                      >
-                        {copied === `langDateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                      </Button>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="cli" className="mt-6">
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                <ArrowUp className="h-4 w-4 mr-1" />
+                时间戳 → 日期
+              </h4>
+              <div className="grid gap-2">
+                {cliCommands.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <div>
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{item.os}</span>
+                      <code className="block text-sm mt-1">{item.tsToDate}</code>
                     </div>
-                  ))}
-                </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => copyToClipboard(item.tsToDate, `tsToDate-${i}`)}
+                    >
+                      {copied === `tsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                <ArrowDown className="h-4 w-4 mr-1" />
+                日期 → 时间戳
+              </h4>
+              <div className="grid gap-2">
+                {cliCommands.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <div>
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400">{item.os}</span>
+                      <code className="block text-sm mt-1">{item.dateToTs}</code>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => copyToClipboard(item.dateToTs, `dateToTs-${i}`)}
+                    >
+                      {copied === `dateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="code" className="mt-6">
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                <ArrowUp className="h-4 w-4 mr-1" />
+                时间戳 → 日期
+              </h4>
+              <div className="grid gap-2">
+                {langExamples.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
+                    <code className="flex-1 text-sm ml-2 truncate">{item.tsToDate}</code>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => copyToClipboard(item.tsToDate, `langTsToDate-${i}`)}
+                    >
+                      {copied === `langTsToDate-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                <ArrowDown className="h-4 w-4 mr-1" />
+                日期 → 时间戳
+              </h4>
+              <div className="grid gap-2">
+                {langExamples.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <span className="text-sm font-medium min-w-[80px]">{item.lang}</span>
+                    <code className="flex-1 text-sm ml-2 truncate">{item.dateToTs}</code>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => copyToClipboard(item.dateToTs, `langDateToTs-${i}`)}
+                    >
+                      {copied === `langDateToTs-${i}` ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
