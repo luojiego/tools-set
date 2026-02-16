@@ -88,7 +88,7 @@ const Home = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pb-24">
         <div className="max-w-6xl mx-auto">
           {/* Hero Section */}
           <div className="text-center mb-12">
@@ -135,10 +135,10 @@ const Home = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm mt-16">
+      <footer className="fixed bottom-0 left-0 right-0 border-t bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>© 2024 工具站. 所有工具均在本地运行，保护您的隐私安全.</p>
+            <p>© 2026 工具站. 所有工具均在本地运行，保护您的隐私安全.</p>
           </div>
         </div>
       </footer>
