@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.j
 import { Badge } from '@/components/ui/badge.jsx'
 import { ScrollArea } from '@/components/ui/scroll-area.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
+import { Input } from '@/components/ui/input.jsx'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.jsx'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import JSONEditor from 'jsoneditor'
 import 'jsoneditor/dist/jsoneditor.css'
@@ -15,10 +17,12 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Minimize2,
   RotateCcw,
   ArrowLeft,
-  ArrowRight
+  History,
+  Search,
+  FileJson,
+  Layers
 } from 'lucide-react'
 
 const STORAGE_KEY = 'json_tool_history'
@@ -122,6 +126,8 @@ const JsonPage = () => {
   const [error, setError] = useState('')
   const [history, setHistory] = useState([])
   const [copied, setCopied] = useState(false)
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -305,71 +311,103 @@ const JsonPage = () => {
           </PanelGroup>
         </div>
 
-        {/* 历史记录 */}
-        <Card className="flex-shrink-0 max-h-[200px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center">
-                <Clock className="h-4 w-4 mr-2" />
+        {/* 历史记录按钮 */}
+        <div className="flex items-center gap-2 mt-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setHistoryDialogOpen(true)}
+            disabled={history.length === 0}
+          >
+            <History className="h-4 w-4 mr-2" />
+            历史记录 ({history.length})
+          </Button>
+          <Badge variant="outline">
+            {formatBytes(totalSize)} / {formatBytes(MAX_SIZE)}
+          </Badge>
+          {history.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleClearHistory}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              清空
+            </Button>
+          )}
+        </div>
+
+        {/* 历史记录弹窗 */}
+        <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <History className="h-5 w-5 mr-2" />
                 历史记录
-              </span>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  {history.length}/{MAX_ITEMS} 条
-                </Badge>
-                <Badge variant="outline">
-                  {formatBytes(totalSize)} / {formatBytes(MAX_SIZE)}
-                </Badge>
-                {history.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={handleClearHistory}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="搜索 JSON 内容..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {history.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-4">
-                暂无历史记录
-              </p>
-            ) : (
-              <ScrollArea className="h-[120px]">
-                <div className="space-y-2">
-                  {history.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                    >
-                      <button
-                        onClick={() => handleLoadFromHistory(item)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(item.timestamp).toLocaleString('zh-CN')}
-                        </div>
-                        <div className="text-sm font-mono truncate max-w-md">
-                          {item.content.slice(0, 80)}
-                          {item.content.length > 80 ? '...' : ''}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatBytes(item.size)}
-                        </div>
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteHistory(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              <ScrollArea className="h-[400px]">
+                {history.filter(item => 
+                  searchQuery ? item.content.toLowerCase().includes(searchQuery.toLowerCase()) : true
+                ).length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    {searchQuery ? '没有匹配的搜索结果' : '暂无历史记录'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {history
+                      .filter(item => 
+                        searchQuery ? item.content.toLowerCase().includes(searchQuery.toLowerCase()) : true
+                      )
+                      .map((item) => {
+                        let preview = { keys: 0, preview: '' }
+                        try {
+                          const parsed = JSON.parse(item.content)
+                          preview.keys = Object.keys(parsed).length
+                          preview.preview = JSON.stringify(parsed).slice(0, 100)
+                        } catch (e) {}
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                            onClick={() => {
+                              setInput(item.content)
+                              setHistoryDialogOpen(false)
+                              setSearchQuery('')
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(item.timestamp).toLocaleString('zh-CN')}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  <Layers className="h-3 w-3 mr-1" />
+                                  {preview.keys} 个键
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {formatBytes(item.size)}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-sm font-mono text-muted-foreground truncate">
+                              {preview.preview}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
               </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </ToolPage>
   )

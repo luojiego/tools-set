@@ -66,7 +66,7 @@ const ToolPage = ({ children, title, description, fullWidth = false }) => {
 
       {/* Main Content */}
       <main className={fullWidth ? "py-6" : "container mx-auto px-4 py-6"}>
-        <div className={fullWidth ? "" : "max-w-5xl mx-auto"}>
+        <div className={fullWidth ? "px-4" : "max-w-5xl mx-auto"}>
           {/* 页面标题 */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold">{title}</h1>
