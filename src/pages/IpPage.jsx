@@ -36,11 +36,11 @@ const IpPage = () => {
     setResult(null)
 
     try {
-      const url = ipAddress 
+      const targetUrl = ipAddress 
         ? `https://ipwho.is/${ipAddress}`
         : `https://ipwho.is/`
       
-      const response = await fetch(url)
+      const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`)
       const data = await response.json()
 
       if (!data.success) {
