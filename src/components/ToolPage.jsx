@@ -51,34 +51,39 @@ const ToolPage = ({ children, title, description, fullWidth = false }) => {
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-black/80 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                  <Home className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  工具站
-                </span>
-              </Link>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* 工具快速导航 */}
-              <div className="hidden md:flex max-w-[calc(100vw-220px)] items-center space-x-1 overflow-x-auto py-1">
-                {visibleTools.filter(t => !t.disabled).map((tool) => (
-                  <Link key={tool.id} to={tool.href}>
-                    <Button 
-                      variant={location.pathname === tool.href ? 'default' : 'ghost'} 
-                      size="sm"
-                      className="h-8"
-                    >
-                      <tool.icon className="h-3.5 w-3.5 mr-1.5" />
-                      {tool.title}
-                    </Button>
-                  </Link>
-                ))}
+          <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-start md:gap-4">
+            <Link
+              to="/"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap py-1.5 transition-opacity hover:opacity-80"
+            >
+              <div className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 p-1.5">
+                <Home className="h-4 w-4 text-white" />
               </div>
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text font-bold text-transparent">
+                工具站
+              </span>
+            </Link>
+
+            {/* 工具快速导航 */}
+            <nav
+              className="hidden min-w-0 grid-cols-4 gap-1.5 md:grid lg:grid-cols-5 xl:grid-cols-7"
+              aria-label="工具快速导航"
+            >
+              {visibleTools.filter(t => !t.disabled).map((tool) => (
+                <Link key={tool.id} to={tool.href} className="min-w-0">
+                  <Button
+                    variant={location.pathname === tool.href ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-9 w-full min-w-0 justify-center px-2"
+                  >
+                    <tool.icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{tool.title}</span>
+                  </Button>
+                </Link>
+              ))}
+            </nav>
+
+            <div className="shrink-0 py-0.5">
               <ThemeToggle />
             </div>
           </div>
