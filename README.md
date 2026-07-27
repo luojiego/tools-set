@@ -114,9 +114,32 @@ pnpm run build
 - 流畅的动画过渡
 
 ### 🔒 安全性
-- 所有计算在本地进行
-- 不收集或存储用户数据
+- 除 IP 地址查询外，所有计算均在本地进行
+- IP 地址查询由 Cloudflare Worker 代理调用定位服务，不持久化查询记录
 - 开源透明，可审计
+
+## IP 地址查询配置
+
+IP 地址查询使用高德 Web 服务 API 获取国内 IPv4 的省市信息，并使用备用数据库补充 ASN、运营商和国外 IP 信息。高德 Key 只保存在 Cloudflare Worker Secret 中，不会打包到前端。
+
+部署前配置生产环境 Secret：
+
+```bash
+pnpm exec wrangler secret put AMAP_WEB_SERVICE_KEY
+```
+
+本地调试时复制 `.dev.vars.example` 为 `.dev.vars`，再填写本地使用的高德 Web 服务 Key。`.dev.vars` 已被 Git 忽略。
+
+```bash
+cp .dev.vars.example .dev.vars
+pnpm run dev:worker
+```
+
+完成生产环境 Secret 配置后，可构建并部署：
+
+```bash
+pnpm run deploy
+```
 
 ### 🚀 用户体验
 - 实时反馈和验证

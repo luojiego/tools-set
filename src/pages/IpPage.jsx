@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
@@ -26,25 +26,19 @@ const IpPage = () => {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState('')
 
-  useEffect(() => {
-    handleLookup('')
-  }, [])
-
-  const handleLookup = async (ipAddress) => {
+  const handleLookup = useCallback(async (ipAddress) => {
     setLoading(true)
     setError('')
     setResult(null)
 
     try {
-      const url = ipAddress 
-        ? `https://ipapi.co/${ipAddress}/json/`
-        : `https://ipapi.co/json/`
-      
+      const query = ipAddress ? `?ip=${encodeURIComponent(ipAddress)}` : ''
+      const url = `/api/ip-lookup${query}`
       const response = await fetch(url)
       const data = await response.json()
 
-      if (data.error) {
-        setError(data.reason || '查询失败，请检查 IP 地址格式')
+      if (!response.ok || data.error) {
+        setError(data.message || '查询失败，请检查 IP 地址格式')
         return
       }
 
@@ -54,7 +48,11 @@ const IpPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    handleLookup('')
+  }, [handleLookup])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -155,6 +153,11 @@ const IpPage = () => {
                   <Badge variant="secondary">
                     IP: {result.ip}
                   </Badge>
+                  {result.location_source && (
+                    <Badge variant="outline">
+                      定位: {result.location_source}
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -165,7 +168,7 @@ const IpPage = () => {
                   copyKey="country"
                 />
                 <ResultField 
-                  label="地区" 
+                  label="省份/地区"
                   value={result.region}
                   icon={MapPin}
                   copyKey="region"
@@ -175,6 +178,17 @@ const IpPage = () => {
                   value={result.city}
                   icon={MapPin}
                   copyKey="city"
+                />
+                <ResultField
+                  label="行政区划代码"
+                  value={result.adcode}
+                  copyKey="adcode"
+                />
+                <ResultField
+                  label="城市范围"
+                  value={result.rectangle}
+                  icon={MapPin}
+                  copyKey="rectangle"
                 />
                 <ResultField 
                   label="邮政编码" 
@@ -278,6 +292,13 @@ const IpPage = () => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {result?.location_warning && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{result.location_warning}</AlertDescription>
+          </Alert>
         )}
 
         {/* 加载状态 */}
