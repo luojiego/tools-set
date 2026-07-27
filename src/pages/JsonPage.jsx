@@ -10,6 +10,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import JSONEditor from 'jsoneditor'
 import 'jsoneditor/dist/jsoneditor.css'
 import ToolPage from '@/components/ToolPage'
+import { useIsMobile } from '@/hooks/use-mobile.js'
 import { 
   Save, 
   Trash2, 
@@ -22,7 +23,8 @@ import {
   History,
   Search,
   FileJson,
-  Layers
+  Layers,
+  Monitor
 } from 'lucide-react'
 
 const STORAGE_KEY = 'json_tool_history'
@@ -51,7 +53,8 @@ const JsonEditorPanel = ({ value, onChange, label, badge, mode = 'tree' }) => {
         try {
           JSON.parse(json)
           onChange(json)
-        } catch (e) {
+        } catch {
+          // Ignore incomplete JSON while the user is typing.
         }
       },
       onChange: () => {
@@ -74,7 +77,7 @@ const JsonEditorPanel = ({ value, onChange, label, badge, mode = 'tree' }) => {
     try {
       const parsed = JSON.parse(value || '{}')
       editorRef.current.set(parsed)
-    } catch (e) {
+    } catch {
       editorRef.current.setText(value || '')
     }
 
@@ -95,7 +98,7 @@ const JsonEditorPanel = ({ value, onChange, label, badge, mode = 'tree' }) => {
           const parsed = JSON.parse(value)
           editorRef.current.set(parsed)
         }
-      } catch (e) {
+      } catch {
         editorRef.current.setText(value)
       }
     }
@@ -121,6 +124,7 @@ const JsonEditorPanel = ({ value, onChange, label, badge, mode = 'tree' }) => {
 }
 
 const JsonPage = () => {
+  const isMobile = useIsMobile()
   const [input, setInput] = useState('{\n  \n}')
   const [output, setOutput] = useState('')
   const [error, setError] = useState('')
@@ -217,17 +221,6 @@ const JsonPage = () => {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleLoadFromHistory = (item) => {
-    setInput(item.content)
-    setError('')
-  }
-
-  const handleDeleteHistory = (id) => {
-    const newHistory = history.filter(item => item.id !== id)
-    setHistory(newHistory)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory))
-  }
-
   const handleClearHistory = () => {
     setHistory([])
     localStorage.removeItem(STORAGE_KEY)
@@ -246,6 +239,26 @@ const JsonPage = () => {
   }
 
   const totalSize = history.reduce((acc, item) => acc + item.size, 0)
+
+  if (isMobile) {
+    return (
+      <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+            <div className="rounded-lg bg-muted p-3">
+              <Monitor className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold">请在桌面端使用 JSON 工具</h2>
+              <p className="text-sm text-muted-foreground">
+                JSON 编辑器依赖较大的双栏编辑区域，移动端暂不展示此工具。
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </ToolPage>
+    )
+  }
 
   return (
     <ToolPage title="JSON 工具" description="JSON 格式化、验证、压缩，支持保存历史记录" fullWidth>
@@ -371,7 +384,9 @@ const JsonPage = () => {
                           const parsed = JSON.parse(item.content)
                           preview.keys = Object.keys(parsed).length
                           preview.preview = JSON.stringify(parsed).slice(0, 100)
-                        } catch (e) {}
+                        } catch {
+                          // History preview falls back to the empty preview for invalid JSON.
+                        }
                         return (
                           <div
                             key={item.id}

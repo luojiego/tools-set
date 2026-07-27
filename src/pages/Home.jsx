@@ -7,9 +7,18 @@ import {
   Clock, 
   FileJson, 
   Wrench,
-  ArrowRight
+  ArrowRight,
+  QrCode,
+  Link2,
+  Regex,
+  KeyRound,
+  Fingerprint,
+  CalendarClock,
+  Image
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import ThemeToggle from '@/components/ThemeToggle.jsx'
+import { useIsMobile } from '@/hooks/use-mobile.js'
 
 const tools = [
   {
@@ -59,14 +68,73 @@ const tools = [
     icon: FileJson,
     href: '/tools/json',
     color: 'from-yellow-500 to-amber-500'
+  },
+  {
+    id: 'qr',
+    title: '二维码工具',
+    description: '生成文本、链接二维码并下载 PNG',
+    icon: QrCode,
+    href: '/tools/qr',
+    color: 'from-slate-500 to-zinc-700'
+  },
+  {
+    id: 'url',
+    title: 'URL 工具',
+    description: '解析 URL、查看参数并处理编码解码',
+    icon: Link2,
+    href: '/tools/url',
+    color: 'from-teal-500 to-cyan-600'
+  },
+  {
+    id: 'regex',
+    title: '正则测试',
+    description: '实时测试正则表达式和捕获组',
+    icon: Regex,
+    href: '/tools/regex',
+    color: 'from-rose-500 to-fuchsia-600'
+  },
+  {
+    id: 'jwt',
+    title: 'JWT 解析',
+    description: '本地解码 Header、Payload 和常用声明',
+    icon: KeyRound,
+    href: '/tools/jwt',
+    color: 'from-violet-500 to-indigo-600'
+  },
+  {
+    id: 'uuid',
+    title: 'UUID / 随机 ID',
+    description: '批量生成 UUID 和随机字符串',
+    icon: Fingerprint,
+    href: '/tools/uuid',
+    color: 'from-lime-500 to-green-600'
+  },
+  {
+    id: 'cron',
+    title: 'Cron 表达式',
+    description: '解析定时规则并显示后续执行时间',
+    icon: CalendarClock,
+    href: '/tools/cron',
+    color: 'from-sky-500 to-blue-700'
+  },
+  {
+    id: 'base64-image',
+    title: 'Base64 图片',
+    description: '图片转 Base64、预览并压缩输出',
+    icon: Image,
+    href: '/tools/base64-image',
+    color: 'from-pink-500 to-orange-500'
   }
 ]
 
 const Home = () => {
+  const isMobile = useIsMobile()
+  const visibleTools = isMobile ? tools.filter((tool) => tool.id !== 'json') : tools
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-black dark:via-zinc-950 dark:to-black">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 sticky top-0 z-50">
+      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-black/80 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -80,6 +148,7 @@ const Home = () => {
                 <p className="text-sm text-muted-foreground">实用在线工具集合</p>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -99,13 +168,13 @@ const Home = () => {
 
           {/* Tools Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tools.map((tool) => (
+            {visibleTools.map((tool) => (
               <Link 
                 key={tool.id} 
                 to={tool.disabled ? '#' : tool.href}
                 className={`block transition-transform hover:scale-[1.02] ${tool.disabled ? 'pointer-events-none opacity-60' : ''}`}
               >
-                <Card className="h-full bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <Card className="h-full bg-white/70 dark:bg-card/90 backdrop-blur-sm border-0 dark:border dark:border-border shadow-lg hover:shadow-xl transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className={`p-2 rounded-lg bg-gradient-to-r ${tool.color}`}>
@@ -119,7 +188,7 @@ const Home = () => {
                     <CardDescription>{tool.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center text-sm text-blue-500">
+                    <div className="flex items-center text-sm text-blue-500 dark:text-muted-foreground">
                       <span>立即使用</span>
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </div>
@@ -132,7 +201,7 @@ const Home = () => {
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 border-t bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <footer className="fixed bottom-0 left-0 right-0 border-t bg-white/80 dark:bg-black/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
             <p>© 2026 工具站. 所有工具均在本地运行，保护您的隐私安全.</p>

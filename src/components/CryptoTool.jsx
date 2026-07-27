@@ -20,7 +20,7 @@ const CryptoTool = () => {
   const base64Encode = (text) => {
     try {
       return btoa(unescape(encodeURIComponent(text)))
-    } catch (e) {
+    } catch {
       throw new Error('Base64 编码失败')
     }
   }
@@ -28,7 +28,7 @@ const CryptoTool = () => {
   const base64Decode = (text) => {
     try {
       return decodeURIComponent(escape(atob(text)))
-    } catch (e) {
+    } catch {
       throw new Error('Base64 解码失败，请检查输入格式')
     }
   }
@@ -41,7 +41,7 @@ const CryptoTool = () => {
   const urlDecode = (text) => {
     try {
       return decodeURIComponent(text)
-    } catch (e) {
+    } catch {
       throw new Error('URL 解码失败，请检查输入格式')
     }
   }
@@ -328,4 +328,3 @@ const CryptoTool = () => {
 }
 
 export default CryptoTool
-

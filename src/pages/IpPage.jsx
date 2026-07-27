@@ -49,7 +49,7 @@ const IpPage = () => {
       }
 
       setResult(data)
-    } catch (err) {
+    } catch {
       setError('网络请求失败，请稍后重试')
     } finally {
       setLoading(false)
@@ -70,13 +70,13 @@ const IpPage = () => {
   }
 
   const ResultField = ({ label, value, icon: Icon, copyKey }) => (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-muted/50">
+      <div className="flex items-center gap-3 min-w-0">
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-sm">{value || '-'}</span>
+      <div className="flex items-center justify-between sm:justify-end gap-2 min-w-0">
+        <span className="font-mono text-sm break-all text-right">{value || '-'}</span>
         {copyKey && value && (
           <Button 
             variant="ghost" 
@@ -112,7 +112,7 @@ const IpPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="flex gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <Input
                   placeholder="输入 IP 地址 (留空查询本机 IP)..."
@@ -252,27 +252,27 @@ const IpPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Shield className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">呼叫代码</span>
                     </div>
-                    <span className="font-mono text-sm">{result.country_calling_code || '-'}</span>
+                    <span className="font-mono text-sm break-all">{result.country_calling_code || '-'}</span>
                   </div>
-                  <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Globe className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">语言</span>
                     </div>
-                    <span className="font-mono text-sm">{result.languages || '-'}</span>
+                    <span className="font-mono text-sm break-all">{result.languages || '-'}</span>
                   </div>
-                  <div className="flex-1 flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Globe className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">国家 TLD</span>
                     </div>
-                    <span className="font-mono text-sm">{result.country_tld || '-'}</span>
+                    <span className="font-mono text-sm break-all">{result.country_tld || '-'}</span>
                   </div>
                 </div>
               </CardContent>

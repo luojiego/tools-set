@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button.jsx'
+import ThemeToggle from '@/components/ThemeToggle.jsx'
 import { 
   Home, 
   Key, 
@@ -8,9 +9,17 @@ import {
   Globe, 
   Clock, 
   FileJson,
+  QrCode,
+  Link2,
+  Regex,
+  KeyRound,
+  Fingerprint,
+  CalendarClock,
+  Image,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile.js'
 
 const tools = [
   { id: 'password', title: '密码生成', icon: Key, href: '/tools/password' },
@@ -18,20 +27,29 @@ const tools = [
   { id: 'id', title: '身份证校验', icon: CreditCard, href: '/tools/id' },
   { id: 'ip', title: 'IP查询', icon: Globe, href: '/tools/ip' },
   { id: 'time', title: '时间转换', icon: Clock, href: '/tools/time' },
-  { id: 'json', title: 'JSON工具', icon: FileJson, href: '/tools/json' }
+  { id: 'json', title: 'JSON工具', icon: FileJson, href: '/tools/json' },
+  { id: 'qr', title: '二维码', icon: QrCode, href: '/tools/qr' },
+  { id: 'url', title: 'URL工具', icon: Link2, href: '/tools/url' },
+  { id: 'regex', title: '正则测试', icon: Regex, href: '/tools/regex' },
+  { id: 'jwt', title: 'JWT解析', icon: KeyRound, href: '/tools/jwt' },
+  { id: 'uuid', title: '随机ID', icon: Fingerprint, href: '/tools/uuid' },
+  { id: 'cron', title: 'Cron', icon: CalendarClock, href: '/tools/cron' },
+  { id: 'base64-image', title: '图片Base64', icon: Image, href: '/tools/base64-image' }
 ]
 
 const ToolPage = ({ children, title, description, fullWidth = false }) => {
   const location = useLocation()
-  const currentIndex = tools.findIndex(t => t.href === location.pathname)
+  const isMobile = useIsMobile()
+  const visibleTools = isMobile ? tools.filter((tool) => tool.id !== 'json') : tools
+  const currentIndex = visibleTools.findIndex(t => t.href === location.pathname)
   
-  const prevTool = currentIndex > 0 ? tools[currentIndex - 1] : null
-  const nextTool = currentIndex < tools.length - 1 ? tools[currentIndex + 1] : null
+  const prevTool = currentIndex > 0 ? visibleTools[currentIndex - 1] : null
+  const nextTool = currentIndex >= 0 && currentIndex < visibleTools.length - 1 ? visibleTools[currentIndex + 1] : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-black dark:via-zinc-950 dark:to-black">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 sticky top-0 z-50">
+      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-black/80 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -45,27 +63,30 @@ const ToolPage = ({ children, title, description, fullWidth = false }) => {
               </Link>
             </div>
             
-            {/* 工具快速导航 */}
-            <div className="hidden md:flex items-center space-x-1">
-              {tools.filter(t => !t.disabled).map((tool) => (
-                <Link key={tool.id} to={tool.href}>
-                  <Button 
-                    variant={location.pathname === tool.href ? 'default' : 'ghost'} 
-                    size="sm"
-                    className="h-8"
-                  >
-                    <tool.icon className="h-3.5 w-3.5 mr-1.5" />
-                    {tool.title}
-                  </Button>
-                </Link>
-              ))}
+            <div className="flex items-center gap-2">
+              {/* 工具快速导航 */}
+              <div className="hidden md:flex max-w-[calc(100vw-220px)] items-center space-x-1 overflow-x-auto py-1">
+                {visibleTools.filter(t => !t.disabled).map((tool) => (
+                  <Link key={tool.id} to={tool.href}>
+                    <Button 
+                      variant={location.pathname === tool.href ? 'default' : 'ghost'} 
+                      size="sm"
+                      className="h-8"
+                    >
+                      <tool.icon className="h-3.5 w-3.5 mr-1.5" />
+                      {tool.title}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={fullWidth ? "py-6" : "container mx-auto px-4 py-6"}>
+      <main className={fullWidth ? "pt-6 pb-24 sm:py-6" : "container mx-auto px-4 pt-6 pb-24 sm:py-6"}>
         <div className={fullWidth ? "px-4" : "max-w-5xl mx-auto"}>
           {/* 页面标题 */}
           <div className="mb-6">

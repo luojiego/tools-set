@@ -96,7 +96,6 @@ const IdValidator = () => {
 
     // 年龄检查
     const today = new Date()
-    const birthDate = new Date(year, month - 1, day)
     const age = today.getFullYear() - year - (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0)
     
     if (age > 150) {
@@ -141,7 +140,6 @@ const IdValidator = () => {
 
     // 年龄计算
     const today = new Date()
-    const birthDate = new Date(year, month - 1, day)
     const age = today.getFullYear() - year - (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0)
 
     return {
@@ -307,4 +305,3 @@ const IdValidator = () => {
 }
 
 export default IdValidator
-
