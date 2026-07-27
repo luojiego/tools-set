@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "amap:ip": "node scripts/amap-ip-lookup.js",
     "dev": "vite",
     "dev:worker": "pnpm run build && wrangler dev",
     "build": "vite build",

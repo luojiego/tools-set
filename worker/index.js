@@ -34,6 +34,8 @@ const getRequestedIp = (request, url) => (
   url.searchParams.get('ip') || request.headers.get('CF-Connecting-IP') || ''
 )
 
+const isCurrentIpLookup = (url) => !url.searchParams.get('ip')?.trim()
+
 const createCacheKey = (request, ip) => {
   const url = new URL('/api/ip-lookup', request.url)
   url.searchParams.set('ip', ip)
@@ -75,6 +77,7 @@ const handleIpLookup = async (request, env, ctx) => {
       version: parsedIp.version,
       amapKey: env.AMAP_WEB_SERVICE_KEY,
       requestId,
+      cloudflare: isCurrentIpLookup(url) ? request.cf : null,
     })
 
     const response = jsonResponse(result, {

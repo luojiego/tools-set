@@ -120,7 +120,7 @@ pnpm run build
 
 ## IP 地址查询配置
 
-IP 地址查询使用高德 Web 服务 API 获取国内 IPv4 的省市信息，并使用备用数据库补充 ASN、运营商和国外 IP 信息。高德 Key 只保存在 Cloudflare Worker Secret 中，不会打包到前端。
+IP 地址查询使用高德 Web 服务 API 获取国内 IPv4 的省市信息。查询当前访问者 IP 时，使用 Cloudflare 请求元数据补充 IPv6、ASN、运营商和国外位置信息；显式查询其他 IP 时使用备用数据库补充信息。高德 Key 只保存在 Cloudflare Worker Secret 中，不会打包到前端。
 
 部署前配置生产环境 Secret：
 
@@ -134,6 +134,18 @@ pnpm exec wrangler secret put AMAP_WEB_SERVICE_KEY
 cp .dev.vars.example .dev.vars
 pnpm run dev:worker
 ```
+
+也可以不启动网站，直接从本机调用高德 IP 定位 API，检查 Key、IP 白名单和查询结果：
+
+```bash
+# 默认查询 106.36.192.6
+pnpm amap:ip
+
+# 查询指定 IPv4
+pnpm amap:ip -- 106.36.192.6
+```
+
+程序会输出高德返回的 `info`、`infocode`、省、市和行政区划代码。高德 IP 定位只能返回省市级位置，不能返回街道或门牌地址。
 
 完成生产环境 Secret 配置后，可构建并部署：
 

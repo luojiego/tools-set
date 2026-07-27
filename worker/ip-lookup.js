@@ -21,6 +21,17 @@ const stringValue = (value) => (
   typeof value === 'string' && value.trim() ? value.trim() : ''
 )
 
+const countryDisplayName = (countryCode) => {
+  if (!/^[A-Z]{2}$/.test(countryCode)) return countryCode
+
+  try {
+    return new Intl.DisplayNames(['zh-CN'], { type: 'region' }).of(countryCode)
+      || countryCode
+  } catch {
+    return countryCode
+  }
+}
+
 const ipv4ToNumber = (octets) => (
   octets.reduce((result, octet) => ((result << 8) | octet) >>> 0, 0)
 )
@@ -213,8 +224,58 @@ const normalizeIpApiResult = (data) => {
   }
 }
 
-export const mergeLookupResults = ({ ip, ipVersion, amap, ipApi }) => {
-  const networkInfo = ipApi ? normalizeIpApiResult(ipApi) : {}
+export const normalizeCloudflareLocation = (data) => {
+  if (!data || typeof data !== 'object') return null
+
+  const countryCode = stringValue(data.country).toUpperCase()
+  const region = stringValue(data.region)
+  const city = stringValue(data.city)
+  const organization = stringValue(data.asOrganization)
+  const asn = Number.isInteger(data.asn) && data.asn > 0
+    ? `AS${data.asn}`
+    : ''
+
+  if (!countryCode && !region && !city && !organization && !asn) {
+    return null
+  }
+
+  return {
+    country_name: countryDisplayName(countryCode),
+    country_code: countryCode,
+    region,
+    city,
+    postal: stringValue(data.postalCode),
+    latitude: data.latitude ?? null,
+    longitude: data.longitude ?? null,
+    timezone: stringValue(data.timezone),
+    org: organization,
+    asn,
+    network: '',
+    country_capital: '',
+    currency_name: '',
+    currency: '',
+    country_calling_code: '',
+    languages: '',
+    country_tld: '',
+  }
+}
+
+export const mergeLookupResults = ({
+  ip,
+  ipVersion,
+  amap,
+  ipApi,
+  cloudflare,
+}) => {
+  const cloudflareInfo = normalizeCloudflareLocation(cloudflare)
+  const networkInfo = ipApi
+    ? normalizeIpApiResult(ipApi)
+    : cloudflareInfo || {}
+  const networkSource = ipApi
+    ? 'ipapi.co'
+    : cloudflareInfo
+      ? 'Cloudflare'
+      : ''
 
   if (amap) {
     return {
@@ -223,7 +284,7 @@ export const mergeLookupResults = ({ ip, ipVersion, amap, ipApi }) => {
       ip,
       version: networkInfo.version || `IPv${ipVersion}`,
       location_source: '高德地图',
-      network_source: ipApi ? 'ipapi.co' : '',
+      network_source: networkSource,
     }
   }
 
@@ -237,6 +298,19 @@ export const mergeLookupResults = ({ ip, ipVersion, amap, ipApi }) => {
       location_warning: ipVersion === 4
         ? '高德未返回有效位置，当前显示备用数据库结果。'
         : '高德 IP 定位仅支持国内 IPv4，当前显示备用数据库结果。',
+    }
+  }
+
+  if (cloudflareInfo) {
+    return {
+      ...cloudflareInfo,
+      ip,
+      version: `IPv${ipVersion}`,
+      location_source: 'Cloudflare',
+      network_source: 'Cloudflare',
+      location_warning: ipVersion === 4
+        ? '高德未返回有效位置，当前显示 Cloudflare 边缘网络识别结果。'
+        : '高德 IP 定位仅支持国内 IPv4，当前显示 Cloudflare 边缘网络识别结果。',
     }
   }
 
@@ -279,10 +353,23 @@ const errorMessage = (outcome) => (
     : ''
 )
 
-export const lookupIp = async ({ ip, version, amapKey, requestId }) => {
+export const lookupIp = async ({
+  ip,
+  version,
+  amapKey,
+  requestId,
+  cloudflare,
+}) => {
+  const hasCloudflareFallback = Boolean(normalizeCloudflareLocation(cloudflare))
   const lookups = version === 4
-    ? [lookupAmap(ip, amapKey), lookupIpApi(ip)]
-    : [Promise.resolve(null), lookupIpApi(ip)]
+    ? [
+        lookupAmap(ip, amapKey),
+        hasCloudflareFallback ? Promise.resolve(null) : lookupIpApi(ip),
+      ]
+    : [
+        Promise.resolve(null),
+        hasCloudflareFallback ? Promise.resolve(null) : lookupIpApi(ip),
+      ]
 
   const [amapOutcome, ipApiOutcome] = await Promise.allSettled(lookups)
   const amap = settledValue(amapOutcome)
@@ -311,6 +398,7 @@ export const lookupIp = async ({ ip, version, amapKey, requestId }) => {
     ipVersion: version,
     amap,
     ipApi,
+    cloudflare,
   })
 
   if (!result) {
